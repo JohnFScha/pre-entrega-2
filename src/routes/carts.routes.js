@@ -80,24 +80,23 @@ cartsRouter.delete("/:cid/products/:pid", async (req, res) => {
 });
 
 // Actualizar carrito por su ID
-cartsRouter.put("/:cid", async (req, res) => {
-  const { cid } = req.params;
-  const {
-    products: [{ id_prod, quantity }],
-  } = req.body;
-
+cartsRouter.put("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+  const { quantity } = req.body;
   try {
-    const cart = await cartsModel.findByIdAndUpdate(cid, {
-      products: [
-        {
-          id_prod,
-          quantity,
-        },
-      ],
-    });
-    cart
-      ? res.status(200).send({ resultado: "OK", message: cart })
-      : res.status(404).send({ resultado: "Not Found", message: cart });
+    const cart = await cartsModel.findOne({_id: cid});
+    console.log(cart)
+    const product = cart.products.find(prod => prod.id_prod._id.toString() === pid)
+    console.log(product)
+
+    if(!product) {
+      res.status(404).send('Not found')
+    } else {
+      product.quantity = quantity
+      await cart.save()
+  
+      res.status(200).send({ resultado: "OK", message: cart })
+    }
   } catch (error) {
     res.status(400).send({ error: `Error al crear producto: ${error}` });
   }
