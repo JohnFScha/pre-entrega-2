@@ -60,7 +60,41 @@ cartsRouter.post("/:cid/products/:pid", async (req, res) => {
   }
 });
 
-// Eliminar un producto del carrito por su id
+cartsRouter.put("/:cid", async (req, res) => {
+  const { cid } = req.params;
+  const products = req.body.products;
+
+  try {
+    const cart = await cartsModel.findOne({ _id: cid });
+
+    if (!cart) {
+      return res.status(404).send({ error: "Cart not found" });
+    }
+
+    products.forEach((newProduct) => {
+      const product = cart.products.find(
+        (prod) => prod.id_prod._id.toString() === newProduct.id_prod
+      );
+
+      if (product) {
+        product.quantity = newProduct.quantity;
+      } else {
+        cart.products.push({
+          id_prod: newProduct.id_prod,
+          quantity: newProduct.quantity,
+        });
+      }
+    });
+
+    await cart.save();
+
+    res.status(200).send({ resultado: "OK", message: cart });
+  } catch (error) {
+    res.status(500).send({ error: `Error updating cart: ${error}` });
+  }
+});
+
+// Actualizar carrito por su ID// Eliminar un producto del carrito por su id
 cartsRouter.delete("/:cid/products/:pid", async (req, res) => {
   const { cid, pid } = req.params;
 
@@ -78,8 +112,6 @@ cartsRouter.delete("/:cid/products/:pid", async (req, res) => {
     res.status(400).send({ error: e });
   }
 });
-
-// Actualizar carrito por su ID
 cartsRouter.put("/:cid/products/:pid", async (req, res) => {
   const { cid, pid } = req.params;
   const { quantity } = req.body;
@@ -116,6 +148,25 @@ cartsRouter.delete("/:cid", async (req, res) => {
       : res.status(404).send({ resultado: "Not Found", message: cart });
   } catch (error) {
     res.status(400).send({ error: `Error al eliminar carrito: ${error}` });
+  }
+});
+
+// Eliminar un producto del carrito por su id
+cartsRouter.delete("/:cid/products/:pid", async (req, res) => {
+  const { cid, pid } = req.params;
+
+  try {
+    const cart = await cartsModel.findById(cid);
+    
+    if (cart) {
+      cart.products = cart.products.filter(product => product.id_prod._id .toString() !== pid);
+      const respuesta = await cartsModel.findByIdAndUpdate(cid, cart, { new: true });
+      res.status(200).send({ respuesta: "OK", mensaje: respuesta });
+    } else {
+      res.status(404).send({ error: "Cart not found" });
+    }
+  } catch (e) {
+    res.status(400).send({ error: e });
   }
 });
 
